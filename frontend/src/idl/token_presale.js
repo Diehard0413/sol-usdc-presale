@@ -518,7 +518,7 @@ export const IDL = {
   ],
   "accounts": [
     {
-      "name": "PresaleInfo",
+      "name": "PresaleState",
       "type": {
         "kind": "struct",
         "fields": [
@@ -610,7 +610,7 @@ export const IDL = {
       }
     },
     {
-      "name": "UserInfo",
+      "name": "UserState",
       "type": {
         "kind": "struct",
         "fields": [

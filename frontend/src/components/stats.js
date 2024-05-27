@@ -77,10 +77,10 @@ const Stats = () => {
         }
     }, [connection, anchorWallet]);
 
-    const getPresaleInfo = async () => {
+    const getPresaleState = async () => {
         if (program) {
             try {
-                const [presale_info, presale_bump] = findProgramAddressSync(
+                const [presale_state, presale_bump] = findProgramAddressSync(
                     [
                         utf8.encode(PRESALE_SEED),
                         PRESALE_AUTHORITY.toBuffer(),
@@ -88,7 +88,7 @@ const Stats = () => {
                     ],
                     program.programId
                 );
-                const info = await program.account.presaleInfo.fetch(presale_info);
+                const info = await program.account.presaleInfo.fetch(presale_state);
                 console.log (Number(info.soldTokenAmount), ">?????????????")
                 setTotalBuyAmount(info.soldTokenAmount)
             } catch (error) {
@@ -98,7 +98,7 @@ const Stats = () => {
     };
 
     useEffect (() => {
-        const interval = setInterval(async() => await getPresaleInfo(), 2000)
+        const interval = setInterval(async() => await getPresaleState(), 2000)
         return () => clearInterval(interval)
     }, [publicKey])
 

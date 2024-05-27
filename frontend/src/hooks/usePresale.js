@@ -59,11 +59,11 @@ import {
   
     useEffect(() => {
   
-      const getPresaleInfo = async () => {
+      const getPresaleState = async () => {
         if (program && !transactionPending) {
           try {
             setLoading(true);
-            const [presale_info, presale_bump] = findProgramAddressSync(
+            const [presale_state, presale_bump] = findProgramAddressSync(
               [
                 utf8.encode(PRESALE_SEED),
                 PRESALE_AUTHORITY.toBuffer(),
@@ -71,7 +71,7 @@ import {
               ],
               program.programId
             );
-            const info = await program.account.presaleInfo.fetch(presale_info);
+            const info = await program.account.presaleInfo.fetch(presale_state);
             setStartTime(info.startTime);
             setEndTime(info.endTime);
             setTotalBuyAmount(info.soldTokenAmount);
@@ -83,7 +83,7 @@ import {
         }
       };
   
-      const getUserInfo = async () => {
+      const getUserState = async () => {
         if (program && publicKey && !transactionPending) {
           try {
             setLoading(true);
@@ -108,8 +108,8 @@ import {
         }
       };
   
-      getPresaleInfo();
-      getUserInfo();
+      getPresaleState();
+      getUserState();
     }, [publicKey, program, transactionPending, connection, anchorWallet]);
 
     const getPrice = async (tokenSymbol) => {
@@ -134,7 +134,7 @@ import {
       if (program && publicKey) {
         try {
           setTransactionPending(true);
-          const [presale_info, presale_bump] = findProgramAddressSync(
+          const [presale_state, presale_bump] = findProgramAddressSync(
             [
               utf8.encode(PRESALE_SEED),
               PRESALE_AUTHORITY.toBuffer(),
@@ -165,7 +165,7 @@ import {
               PRESALE_ID // presale id
             )
             .accounts({
-              presaleInfo: presale_info,
+              presaleInfo: presale_state,
               authority: publicKey,
               systemProgram: SystemProgram.programId,
             })
@@ -186,7 +186,7 @@ import {
       if (program && publicKey) {
         try {
           setTransactionPending(true);
-          const [presale_info, presale_bump] = findProgramAddressSync(
+          const [presale_state, presale_bump] = findProgramAddressSync(
             [
               utf8.encode(PRESALE_SEED),
               PRESALE_AUTHORITY.toBuffer(),
@@ -194,13 +194,13 @@ import {
             ],
             program.programId
           );
-          console.log("HHHHH - presale_info", presale_info.toString());
+          console.log("HHHHH - presale_state", presale_state.toString());
           const tx = await program.methods
             .withdrawSol(
               PRESALE_ID // presale id
             )
             .accounts({
-              presaleInfo: presale_info,
+              presaleInfo: presale_state,
               presaleAuthority: PRESALE_AUTHORITY,
               buyerAuthority: publicKey,
               buyer: publicKey,
@@ -226,7 +226,7 @@ import {
       if (program && publicKey) {
         try {
           setTransactionPending(true);
-          const [presale_info, presale_bump] = findProgramAddressSync(
+          const [presale_state, presale_bump] = findProgramAddressSync(
             [
               utf8.encode(PRESALE_SEED),
               PRESALE_AUTHORITY.toBuffer(),
@@ -252,7 +252,7 @@ import {
               PRESALE_ID // presale id
             )
             .accounts({
-              presaleInfo: presale_info,
+              presaleInfo: presale_state,
               authority: publicKey,
               systemProgram: SystemProgram.programId,
             })
@@ -273,7 +273,7 @@ import {
       if (program && publicKey) {
         try {
           setTransactionPending(true);
-          const [presale_info, presale_bump] = findProgramAddressSync(
+          const [presale_state, presale_bump] = findProgramAddressSync(
             [
               utf8.encode(PRESALE_SEED),
               PRESALE_AUTHORITY.toBuffer(),
@@ -287,7 +287,7 @@ import {
               PRESALE_ID // presale id
             )
             .accounts({
-              presaleInfo: presale_info,
+              presaleInfo: presale_state,
               newAuth: new PublicKey(
                 "61N9pcSLe97igPTUvwyDXhcEJpRwjPH89ARfiWPN2gdu"
               ),
@@ -312,7 +312,7 @@ import {
       if (program && publicKey) {
         try {
           setTransactionPending(true);
-          const [presale_info, presale_bump] = findProgramAddressSync(
+          const [presale_state, presale_bump] = findProgramAddressSync(
             [
               utf8.encode(PRESALE_SEED),
               PRESALE_AUTHORITY.toBuffer(),
@@ -339,7 +339,7 @@ import {
           const toAssociatedTokenAccount =
             await anchor.utils.token.associatedAddress({
               mint: depositingToken,
-              owner: presale_info,
+              owner: presale_state,
             });
   
           // Use BigInt for large number calculations
@@ -357,7 +357,7 @@ import {
               fromAssociatedTokenAccount,
               // fromAuthority: publicKey,
               toAssociatedTokenAccount,
-              presaleInfo: presale_info,
+              presaleInfo: presale_state,
               payer: publicKey,
               rent: anchor.web3.SYSVAR_RENT_PUBKEY,
               systemProgram: anchor.web3.SystemProgram.programId,
