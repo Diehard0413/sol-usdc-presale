@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::{constants::*, state::*};
+use crate::{constants::*, events::*, state::*};
 
 #[derive(Accounts)]
 pub struct UpdateConfig<'info> {
@@ -33,5 +33,9 @@ pub fn handle(
     
     accts.vault_state.is_initialized = is_initialized;
 
+    emit!(ConfigUpdated {
+        authority: accts.authority.key(),
+        config: is_initialized,
+    });
     Ok(())
 }

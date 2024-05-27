@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use std::mem::size_of;
-use crate::{constants::*, state::*};
+use crate::{constants::*, events::*, state::*};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -41,10 +41,15 @@ pub fn handle(
 
     accts.global_state.authority = accts.authority.key();
     accts.global_state.token_mint = accts.token_mint.key();
-    accts.global_state.quote_token_mint = accts.token_mint.key();
+    accts.global_state.quote_token_mint = accts.quote_token_mint.key();
     accts.global_state.presale_stage = 0;
     accts.global_state.is_initialized = true;
     accts.vault_state.is_initialized = true;
     
+    emit!(Initialized {
+        authority: accts.authority.key(),
+        token_mint: accts.token_mint.key(),
+        quote_token_mint: accts.quote_token_mint.key(),
+    });
     Ok(())
 }

@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::{constants::*, state::*};
+use crate::{constants::*, events::*, state::*};
 
 #[derive(Accounts)]
 pub struct UpdateAuth<'info> {
@@ -27,5 +27,9 @@ pub fn handle(
     let accts = ctx.accounts;
     accts.global_state.authority = accts.new_authority.key();
 
+    emit!(AuthorityUpdated {
+        authority: accts.authority.key(),
+        new_authority: accts.new_authority.key(),
+    });
     Ok(())
 }

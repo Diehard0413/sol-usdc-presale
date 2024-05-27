@@ -1,103 +1,91 @@
 use {
     anchor_lang::prelude::*,
     anchor_spl::{
-        token,
-        associated_token,
+        associated_token::{AssociatedToken},
+        token::{self, Mint, Token, TokenAccount, Transfer}
     },
 };
-
-use crate::errors::PresaleError;
-use crate::state::{PresaleInfo, UserInfo};
-use crate::constants::{PRESALE_SEED, USER_SEED};
-
-pub fn claim_token(
-    ctx: Context<ClaimToken>, 
-    identifier: u8
-) -> Result<()> {
-
-    let presale_info = &mut ctx.accounts.presale_info;
-    let bump = &[presale_info.bump];
-
-    let cur_timestamp = u64::try_from(Clock::get()?.unix_timestamp).unwrap();;
-
-    // get time and compare with start and end time
-    if presale_info.end_time > cur_timestamp {
-        msg!("Presale not ended yet.");
-        return Err(PresaleError::PresaleNotEnded.into());
-    }
-
-    let user_info = &mut ctx.accounts.user_info;
-    let claim_amount = user_info.buy_token_amount - user_info.claim_amount;
-    user_info.claim_amount = user_info.claim_amount + claim_amount;
-    presale_info.deposit_token_amount -= claim_amount;
-
-    msg!("Transferring presale tokens to buyer {}...", &ctx.accounts.buyer.key());
-    msg!("Mint: {}", &ctx.accounts.presale_token_mint_account.to_account_info().key());   
-    msg!("From Token Address: {}", &ctx.accounts.presale_presale_token_associated_token_account.key());     
-    msg!("To Token Address: {}", &ctx.accounts.buyer_presale_token_associated_token_account.key());     
-    token::transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            token::Transfer {
-                from: ctx.accounts.presale_presale_token_associated_token_account.to_account_info(),
-                to: ctx.accounts.buyer_presale_token_associated_token_account.to_account_info(),
-                authority: ctx.accounts.presale_info.to_account_info(),
-            },
-            &[&[PRESALE_SEED, ctx.accounts.presale_authority.key().as_ref(), [identifier].as_ref(), bump][..]],
-        ),
-        claim_amount,
-    )?;
-
-    msg!("Presale tokens transferred successfully.");
-
-    Ok(())
-}
+use crate::{constants::*, errors::*, events::*, state::*};
 
 #[derive(Accounts)]
 #[instruction(
     identifier: u8
 )]
 pub struct ClaimToken<'info> {
-    // Presale token accounts
     #[account(mut)]
-    pub presale_token_mint_account: Box<Account<'info, token::Mint>>,
-    #[account(
-        init_if_needed,
-        payer = buyer,
-        associated_token::mint = presale_token_mint_account,
-        associated_token::authority = buyer_authority,
-    )]
-    pub buyer_presale_token_associated_token_account: Box<Account<'info, token::TokenAccount>>,
-    #[account(
-        init_if_needed,
-        payer = buyer,
-        associated_token::mint = presale_token_mint_account,
-        associated_token::authority = presale_info,
-    )]
-    pub presale_presale_token_associated_token_account: Box<Account<'info, token::TokenAccount>>,
+    pub user: Signer<'info>,
+
+    pub global_state: Account<'info, GlobalState>,
 
     #[account(
-        init_if_needed,
-        payer = buyer,
-        space = 8 + std::mem::size_of::<UserInfo>(),
-        seeds = [USER_SEED, presale_authority.key().as_ref(), buyer.key().as_ref(), [identifier].as_ref()],
-        bump
+        mut,
+        seeds = [PRESALE_STATE_SEED, &identifier.to_le_bytes()],
+        bump,
     )]
-    pub user_info: Box<Account<'info, UserInfo>>,
-    
+    pub presale_state: Box<Account<'info, PresaleState>>,
+
     #[account(
         mut,
-        seeds = [PRESALE_SEED, presale_authority.key().as_ref(), [identifier].as_ref()],
-        bump = presale_info.bump
+        seeds = [USER_STATE_SEED, user.key().as_ref(), &identifier.to_le_bytes()],
+        bump,
     )]
-    pub presale_info: Box<Account<'info, PresaleInfo>>,
-    pub presale_authority: SystemAccount<'info>,
-    #[account(constraint = buyer.key() == buyer_authority.key())]
-    pub buyer_authority: SystemAccount<'info>,
-    #[account(mut)]
-    pub buyer: Signer<'info>,
-    pub rent: Sysvar<'info, Rent>,
+    pub user_state: Box<Account<'info, UserState>>,
+
+    #[account(
+        address = global_state.token_mint
+    )]
+    pub token_mint: Box<Account<'info, Mint>>,
+
+    #[account(
+        mut,
+        associated_token::mint = token_mint,
+        associated_token::authority = presale_state,
+    )]
+    pub presale_token_account: Box<Account<'info, TokenAccount>>,
+    
+    #[account(
+        init_if_needed,
+        payer = user,
+        associated_token::mint = token_mint,
+        associated_token::authority = user,
+    )]
+    pub user_token_account: Box<Account<'info, TokenAccount>>,
+
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, token::Token>,
-    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
+}
+
+pub fn handle(
+    ctx: Context<ClaimToken>, 
+    identifier: u8
+) -> Result<()> {
+    let accts = ctx.accounts;
+    
+    let cur_timestamp = Clock::get()?.unix_timestamp as u64;
+
+    require!(cur_timestamp > accts.presale_state.end_time, PresaleError::PresaleNotEnded);
+    require!(accts.user_state.claim_amount == 0, PresaleError::AlreadyClaimed);
+
+    accts.user_state.claim_amount = accts.user_state.buy_token_amount;
+    accts.user_state.claim_time = cur_timestamp;
+
+    let signer_seeds: &[&[&[u8]]] = &[&[&PRESALE_STATE_SEED, &identifier.to_le_bytes(), &[ctx.bumps.presale_state]]];
+
+    let cpi_accounts = Transfer {
+        from: accts.presale_token_account.to_account_info(),
+        to: accts.user_token_account.to_account_info(),
+        authority: accts.presale_state.to_account_info(),
+    };
+    let cpi_program = accts.token_program.to_account_info();
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+
+    token::transfer(cpi_ctx, accts.user_state.claim_amount)?;
+
+    emit!(TokenSold {
+        authority: accts.user.key(),
+        identifier: identifier,
+        amount: accts.user_state.claim_amount
+    });
+    Ok(())
 }

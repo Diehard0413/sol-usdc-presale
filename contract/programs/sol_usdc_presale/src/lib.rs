@@ -2,113 +2,99 @@ use anchor_lang::prelude::*;
 
 pub mod constants;
 pub mod errors;
-pub mod state;
+pub mod events;
 pub mod instructions;
+pub mod state;
 
 use instructions::*;
 
-declare_id!("2g4jbSt1Z7PDYfRHKVXo38h75a7FcRsqxK9NVH7uusJu");
+declare_id!("BFiq33i9YQt5afhHzCxhDPYWeJeAkM2MWpLjS3Naqia2");
 #[program]
 pub mod token_presale {
     use super::*;
 
+    pub fn initialize(
+        ctx: Context<Initialize>
+    ) -> Result<()> {
+        initialize::handle(ctx)
+    }
+    
+    pub fn update_auth(
+        ctx: Context<UpdateAuth>
+    ) -> Result<()> {
+        return update_auth::handle(ctx)
+    }
+
+    pub fn update_config(
+        ctx: Context<UpdateConfig>,
+        is_initialized: bool
+    ) -> Result<()> {
+        update_config::handle(ctx, is_initialized)
+    }
+
     pub fn create_presale(
         ctx: Context<CreatePresale>,
-        token_mint_address: Pubkey,
-        sol_token_mint_address: Pubkey,
-        usdt_token_mint_address: Pubkey,
-        usdc_token_mint_address: Pubkey,
-        jup_token_mint_address: Pubkey,
-        softcap_amount:u64,
-        hardcap_amount:u64,
+        softcap_amount: u64,
+        hardcap_amount: u64,
         max_token_amount_per_address: u64,
         price_per_token: u64,
         start_time: u64,
-        end_time: u64,
-        identifier: u8
+        end_time: u64
     ) -> Result<()> {
-        return create_presale::create_presale(
+        return create_presale::handle(
             ctx,
-            token_mint_address,
-            sol_token_mint_address,
-            usdt_token_mint_address,
-            usdc_token_mint_address,
-            jup_token_mint_address,
             softcap_amount,
             hardcap_amount,
             max_token_amount_per_address,
             price_per_token,
             start_time,
-            end_time,
-            identifier
-        );
+            end_time
+        )
     }
 
     pub fn update_presale(
         ctx: Context<UpdatePresale>,
-        max_token_amount_per_address: u64,
-        price_per_token: u64,
+        identifier: u8,
         softcap_amount: u64,
         hardcap_amount: u64,
+        max_token_amount_per_address: u64,
+        price_per_token: u64,
         start_time: u64,
-        end_time: u64,
-        identifier: u8
+        end_time: u64
     ) -> Result<()> {
-        return update_presale::update_presale(
+        return update_presale::handle(
             ctx,
-            max_token_amount_per_address,
-            price_per_token,
+            identifier,
             softcap_amount,
             hardcap_amount,
+            max_token_amount_per_address,
+            price_per_token,
             start_time,
-            end_time,
-            identifier
-        );
-    }
-
-    pub fn update_auth(
-        ctx: Context<UpdateAuth>,
-        identifier: u8
-    ) -> Result<()> {
-        return update_auth::update_auth(
-            ctx,
-            identifier
-        );
+            end_time
+        )
     }
 
     pub fn deposit_token(
         ctx: Context<DepositToken>,
-        amount: u64,
-        identifier: u8
-    ) -> Result<()> {
-        return deposit_token::deposit_token(
-            ctx,
-            amount,
-            identifier
-        );
-    }
-
-    pub fn start_presale(
-        ctx: Context<StartPresale>,
-        start_time: u64,
         identifier: u8,
+        amount: u64
     ) -> Result<()> {
-        return start_presale::start_presale(
+        return deposit_token::handle(
             ctx,
-            start_time,
-            identifier
+            identifier,
+            amount
         );
     }
 
     pub fn buy_token(
         ctx: Context<BuyToken>,
-        quote_amount: u64,
         identifier: u8,
+        amount: u64
     ) -> Result<()> {
-        return buy_token::buy_token(
+        return buy_token::handle(
             ctx,
-            quote_amount,
-            identifier
+            identifier,
+            amount
         );
     }
 
@@ -116,7 +102,7 @@ pub mod token_presale {
         ctx: Context<ClaimToken>,
         identifier: u8
     ) -> Result<()> {
-        return claim_token::claim_token(
+        return claim_token::handle(
             ctx,
             identifier
         );
@@ -124,21 +110,13 @@ pub mod token_presale {
 
     pub fn withdraw_token(
         ctx: Context<WithdrawToken>,
-        identifier: u8
+        identifier: u8,
+        amount: u64
     ) -> Result<()> {
-        return withdraw_token::withdraw_token(
+        return withdraw_token::handle(
             ctx,
-            identifier
-        );
-    }
-
-    pub fn withdraw_sol(
-        ctx: Context<WithdrawSol>,
-        identifier: u8
-    ) -> Result<()> {
-        return withdraw_sol::withdraw_sol(
-            ctx,
-            identifier
+            identifier,
+            amount
         );
     }
 }

@@ -1,11 +1,11 @@
 use {
-    anchor_lang::prelude::*;
+    anchor_lang::prelude::*,
     anchor_spl::{
         associated_token::{AssociatedToken},
-        token::{Mint, Token, TokenAccount}
+        token::{self, Mint, Token, TokenAccount, Transfer}
     },
 };
-use crate::{constants::*, state::*};
+use crate::{constants::*, events::*, state::*};
 
 #[derive(Accounts)]
 #[instruction(
@@ -29,7 +29,7 @@ pub struct DepositToken<'info> {
         seeds = [PRESALE_STATE_SEED, &identifier.to_le_bytes()],
         bump,
     )]
-    pub presale_info: Box<Account<'info, PresaleInfo>>,
+    pub presale_state: Box<Account<'info, PresaleState>>,
 
     #[account(
         address = global_state.token_mint
@@ -40,7 +40,7 @@ pub struct DepositToken<'info> {
         init_if_needed,
         payer = authority,
         associated_token::mint = token_mint,
-        associated_token::authority = presale_info,
+        associated_token::authority = presale_state,
     )]
     pub presale_token_account: Box<Account<'info, TokenAccount>>,
     
@@ -58,7 +58,7 @@ pub struct DepositToken<'info> {
 
 pub fn handle(
     ctx: Context<DepositToken>, 
-    _identifier: u8,
+    identifier: u8,
     amount: u64
 ) -> Result<()> {
     let accts = ctx.accounts;
@@ -73,7 +73,12 @@ pub fn handle(
 
     token::transfer(cpi_ctx, amount)?;
 
-    accts.presale_info.deposit_token_amount += amount;
+    accts.presale_state.deposit_token_amount += amount;
 
+    emit!(TokenDeposited {
+        authority: accts.authority.key(),
+        identifier: identifier,
+        amount: amount
+    });
     Ok(())
 }

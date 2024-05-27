@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::{constants::*, state::*};
+use crate::{constants::*, events::*, state::*};
 
 #[derive(Accounts)]
 #[instruction(
@@ -23,7 +23,7 @@ pub struct UpdatePresale<'info> {
         seeds = [PRESALE_STATE_SEED, &identifier.to_le_bytes()],
         bump,
     )]
-    pub presale_info: Box<Account<'info, PresaleInfo>>,
+    pub presale_state: Box<Account<'info, PresaleState>>,
 
     pub system_program: Program<'info, System>,
 }
@@ -40,12 +40,18 @@ pub fn handle(
 ) -> Result<()> {
     let accts = ctx.accounts;
 
-    accts.presale_info.softcap_amount = softcap_amount;
-    accts.presale_info.hardcap_amount = hardcap_amount;
-    accts.presale_info.max_token_amount_per_address = max_token_amount_per_address;
-    accts.presale_info.price_per_token = price_per_token;
-    accts.presale_info.start_time = start_time;
-    accts.presale_info.end_time = end_time;
+    let cur_timestamp = Clock::get()?.unix_timestamp as u64;
 
+    accts.presale_state.softcap_amount = softcap_amount;
+    accts.presale_state.hardcap_amount = hardcap_amount;
+    accts.presale_state.max_token_amount_per_address = max_token_amount_per_address;
+    accts.presale_state.price_per_token = price_per_token;
+    accts.presale_state.start_time = start_time;
+    accts.presale_state.end_time = end_time;
+
+    emit!(PresaleUpdated {
+        identifier: accts.presale_state.identifier,
+        timestamp: cur_timestamp
+    });
     Ok(())
 }

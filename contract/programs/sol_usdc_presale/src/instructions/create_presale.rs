@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use std::mem::size_of;
-use crate::{constants::*, state::*};
+use crate::{constants::*, events::*, state::*};
 
 #[derive(Accounts)]
 pub struct CreatePresale<'info> {
@@ -19,19 +19,19 @@ pub struct CreatePresale<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + size_of::<PresaleInfo>(),
-        seeds = [PRESALE_SEED, &global_state.presale_stage.to_le_bytes()],
+        space = 8 + size_of::<PresaleState>(),
+        seeds = [PRESALE_STATE_SEED, &global_state.presale_stage.to_le_bytes()],
         bump
     )]
-    pub presale_info: Box<Account<'info, PresaleInfo>>,
+    pub presale_state: Box<Account<'info, PresaleState>>,
 
     pub system_program: Program<'info, System>,
 }
 
 pub fn handle(
     ctx: Context<CreatePresale>,
-    softcap_amount:u64,
-    hardcap_amount:u64,
+    softcap_amount: u64,
+    hardcap_amount: u64,
     max_token_amount_per_address: u64,
     price_per_token: u64,
     start_time: u64,
@@ -39,16 +39,22 @@ pub fn handle(
 ) -> Result<()> {
     let accts = ctx.accounts;
 
-    accts.presale_info.identifier = accts.global_state.presale_stage;
-    accts.presale_info.softcap_amount = softcap_amount;
-    accts.presale_info.hardcap_amount = hardcap_amount;
-    accts.presale_info.deposit_token_amount = 0;
-    accts.presale_info.sold_token_amount = 0;
-    accts.presale_info.max_token_amount_per_address = max_token_amount_per_address;
-    accts.presale_info.price_per_token = price_per_token;
-    accts.presale_info.start_time = start_time;
-    accts.presale_info.end_time = end_time;
+    let cur_timestamp = Clock::get()?.unix_timestamp as u64;
+
+    accts.presale_state.identifier = accts.global_state.presale_stage;
+    accts.presale_state.softcap_amount = softcap_amount;
+    accts.presale_state.hardcap_amount = hardcap_amount;
+    accts.presale_state.deposit_token_amount = 0;
+    accts.presale_state.sold_token_amount = 0;
+    accts.presale_state.max_token_amount_per_address = max_token_amount_per_address;
+    accts.presale_state.price_per_token = price_per_token;
+    accts.presale_state.start_time = start_time;
+    accts.presale_state.end_time = end_time;
     accts.global_state.presale_stage += 1;
 
+    emit!(PresaleCreated {
+        identifier: accts.presale_state.identifier,
+        timestamp: cur_timestamp
+    });
     Ok(())
 }

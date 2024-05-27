@@ -1,106 +1,88 @@
 use {
     anchor_lang::prelude::*,
     anchor_spl::{
-        token,
-        associated_token,
+        associated_token::{AssociatedToken},
+        token::{self, Mint, Token, TokenAccount, Transfer}
     },
 };
-
-use crate::state::PresaleInfo;
-use crate::constants::PRESALE_SEED;
-use crate::errors::PresaleError;
-
-pub fn withdraw_token(
-    ctx: Context<WithdrawToken>, 
-    identifier: u8
-) -> Result<()> {
-    let presale_info = &mut ctx.accounts.presale_info;
-    let withdrawnToken = ctx.accounts.presale_token_mint_account.key();
-    let bump = &[presale_info.bump];
-
-    let cur_timestamp = u64::try_from(Clock::get()?.unix_timestamp).unwrap();;
-    if presale_info.end_time > cur_timestamp {
-        msg!("Presale not ended yet.");
-        return Err(PresaleError::PresaleNotEnded.into());
-    }
-
-    let mut amount = 0;
-    if withdrawnToken == presale_info.usdt_token_mint_address {
-        amount = presale_info.deposit_usdt_token_amount;
-        presale_info.deposit_usdt_token_amount = 0;
-    } else if withdrawnToken == presale_info.usdc_token_mint_address {
-        amount = presale_info.deposit_usdc_token_amount;
-        presale_info.deposit_usdc_token_amount = 0;
-    } else if withdrawnToken == presale_info.jup_token_mint_address {
-        amount = presale_info.deposit_jup_token_amount;
-        presale_info.deposit_jup_token_amount = 0;
-    } else if withdrawnToken == presale_info.token_mint_address {
-        amount = presale_info.deposit_token_amount;
-        presale_info.deposit_token_amount = 0;
-    }
-
-    msg!("Transferring presale tokens to buyer {}...", &ctx.accounts.buyer.key());
-    msg!("Mint: {}", &ctx.accounts.presale_token_mint_account.to_account_info().key());   
-    msg!("From Token Address: {}", &ctx.accounts.presale_presale_token_associated_token_account.key());     
-    msg!("To Token Address: {}", &ctx.accounts.buyer_presale_token_associated_token_account.key());     
-    token::transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            token::Transfer {
-                from: ctx.accounts.presale_presale_token_associated_token_account.to_account_info(),
-                to: ctx.accounts.buyer_presale_token_associated_token_account.to_account_info(),
-                authority: ctx.accounts.presale_info.to_account_info(),
-            },
-            &[&[PRESALE_SEED, ctx.accounts.presale_authority.key().as_ref(), [identifier].as_ref(), bump][..]],
-        ),
-        amount,
-    )?;
-
-    msg!("Presale tokens transferred successfully.");
-
-    Ok(())
-}
-
+use crate::{constants::*, errors::*, events::*, state::*};
 
 #[derive(Accounts)]
 #[instruction(
     identifier: u8
 )]
 pub struct WithdrawToken<'info> {
-    // Presale token accounts
     #[account(mut)]
-    pub presale_token_mint_account: Box<Account<'info, token::Mint>>,
-    #[account(
-        init_if_needed,
-        payer = buyer,
-        associated_token::mint = presale_token_mint_account,
-        associated_token::authority = buyer_authority,
-    )]
-    pub buyer_presale_token_associated_token_account: Box<Account<'info, token::TokenAccount>>,
-    #[account(
-        init_if_needed,
-        payer = buyer,
-        associated_token::mint = presale_token_mint_account,
-        associated_token::authority = presale_info,
-    )]
-    pub presale_presale_token_associated_token_account: Box<Account<'info, token::TokenAccount>>,
+    pub authority: Signer<'info>,
 
     #[account(
         mut,
-        seeds = [PRESALE_SEED, presale_authority.key().as_ref(), [identifier].as_ref()],
-        bump = presale_info.bump
+        seeds = [GLOBAL_STATE_SEED, authority.key().as_ref()],
+        bump,
+        has_one = authority,
+        constraint = global_state.is_initialized == true,
     )]
-    pub presale_info: Box<Account<'info, PresaleInfo>>,
-    pub presale_authority: SystemAccount<'info>,
-    #[account(constraint = buyer.key() == buyer_authority.key())]
-    pub buyer_authority: SystemAccount<'info>,
+    pub global_state: Account<'info, GlobalState>,
+
     #[account(
         mut,
-        constraint = buyer.key() == presale_info.authority1.key()
+        seeds = [PRESALE_STATE_SEED, &identifier.to_le_bytes()],
+        bump,
     )]
-    pub buyer: Signer<'info>,
-    pub rent: Sysvar<'info, Rent>,
+    pub presale_state: Box<Account<'info, PresaleState>>,
+
+    #[account(
+        address = global_state.token_mint
+    )]
+    pub token_mint: Box<Account<'info, Mint>>,
+
+    #[account(
+        mut,
+        associated_token::mint = token_mint,
+        associated_token::authority = presale_state,
+    )]
+    pub presale_token_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        init_if_needed,
+        payer = authority,
+        associated_token::mint = token_mint,
+        associated_token::authority = authority,
+    )]
+    pub authority_token_account: Box<Account<'info, TokenAccount>>,
+    
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, token::Token>,
-    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
+}
+
+pub fn handle(
+    ctx: Context<WithdrawToken>, 
+    identifier: u8,
+    amount: u64
+) -> Result<()> {
+    let accts = ctx.accounts;
+
+    require!(accts.presale_state.deposit_token_amount >= amount, PresaleError::InsufficentTokenAmount);
+    
+    accts.presale_state.deposit_token_amount -= amount;
+
+    let signer_seeds: &[&[&[u8]]] = &[&[&PRESALE_STATE_SEED, &identifier.to_le_bytes(), &[ctx.bumps.presale_state]]];
+
+    let cpi_accounts = Transfer {
+        from: accts.presale_token_account.to_account_info(),
+        to: accts.authority_token_account.to_account_info(),
+        authority: accts.presale_state.to_account_info(),
+    };
+    let cpi_program = accts.token_program.to_account_info();
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+
+    token::transfer(cpi_ctx, amount)?;
+
+    emit!(TokenSold {
+        authority: accts.authority.key(),
+        identifier: identifier,
+        amount: amount
+    });
+    Ok(())
 }

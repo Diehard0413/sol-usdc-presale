@@ -1,11 +1,12 @@
 use {
-    anchor_lang::prelude::*;
+    anchor_lang::prelude::*,
     anchor_spl::{
         associated_token::{AssociatedToken},
-        token::{Mint, Token, TokenAccount}
+        token::{self, Mint, Token, TokenAccount, Transfer}
     },
 };
-use crate::{constants::*, state::*};
+use std::mem::size_of;
+use crate::{constants::*, errors::*, events::*, state::*};
 
 #[derive(Accounts)]
 #[instruction(
@@ -32,16 +33,16 @@ pub struct BuyToken<'info> {
         seeds = [PRESALE_STATE_SEED, &identifier.to_le_bytes()],
         bump,
     )]
-    pub presale_info: Box<Account<'info, PresaleInfo>>,
+    pub presale_state: Box<Account<'info, PresaleState>>,
 
     #[account(
         init_if_needed,
         payer = user,
-        space = 8 + size_of::<UserInfo>(),
+        space = 8 + size_of::<UserState>(),
         seeds = [USER_STATE_SEED, user.key().as_ref(), &identifier.to_le_bytes()],
         bump,
     )]
-    pub user_info: Box<Account<'info, UserInfo>>,
+    pub user_state: Box<Account<'info, UserState>>,
 
     #[account(
         address = global_state.token_mint
@@ -51,7 +52,7 @@ pub struct BuyToken<'info> {
     #[account(
         mut,
         associated_token::mint = token_mint,
-        associated_token::authority = presale_info,
+        associated_token::authority = presale_state,
     )]
     pub presale_token_account: Box<Account<'info, TokenAccount>>,
     
@@ -67,41 +68,41 @@ pub struct BuyToken<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn buy_token(
+pub fn handle(
     ctx: Context<BuyToken>, 
-    amount: u64,
     identifier: u8,
+    amount: u64,
 ) -> Result<()> {
     let accts = ctx.accounts;
 
     let cur_timestamp = Clock::get()?.unix_timestamp as u64;
 
-    require!(cur_timestamp >= accts.presale_info.start_time, PresaleError::PresaleNotStarted);
-    require!(cur_timestamp <= accts.presale_info.end_time, PresaleError::PresaleEnded);
+    require!(cur_timestamp >= accts.presale_state.start_time, PresaleError::PresaleNotStarted);
+    require!(cur_timestamp <= accts.presale_state.end_time, PresaleError::PresaleEnded);
     
     let token_amount = amount
-        .checked_pow(accts.presale_info.decimal as u32)
+        .checked_pow(accts.presale_state.decimal as u32)
         .unwrap()
         .checked_mul(10000 as u64)
         .unwrap()
-        .checked_div(accts.presale_info.price_per_token)
+        .checked_div(accts.presale_state.price_per_token)
         .unwrap();
     require!(
-        token_amount <= accts.presale_info.deposit_token_amount - accts.presale_info.sold_token_amount, 
+        token_amount <= accts.presale_state.deposit_token_amount - accts.presale_state.sold_token_amount, 
         PresaleError::InsufficentTokenAmount
     );
     require!(
-        accts.presale_info.max_token_amount_per_address >= accts.user_info.buy_token_amount + token_amount,
+        accts.presale_state.max_token_amount_per_address >= accts.user_state.buy_token_amount + token_amount,
         PresaleError::MaxUserLimit
     );
 
-    accts.presale_info.real_amount += amount;
-    accts.presale_info.sold_token_amount += token_amount;
-    accts.user_info.user = accts.user.key();
-    accts.user_info.identifier = identifier;
-    accts.user_info.buy_quote_amount += amount;
-    accts.user_info.buy_token_amount += token_amount;
-    accts.user_info.buy_time = cur_timestamp;
+    accts.presale_state.real_amount += amount;
+    accts.presale_state.sold_token_amount += token_amount;
+    accts.user_state.user = accts.user.key();
+    accts.user_state.identifier = identifier;
+    accts.user_state.buy_quote_amount += amount;
+    accts.user_state.buy_token_amount += token_amount;
+    accts.user_state.buy_time = cur_timestamp;
 
     let cpi_accounts = Transfer {
         from: accts.user_token_account.to_account_info(),
@@ -113,5 +114,10 @@ pub fn buy_token(
 
     token::transfer(cpi_ctx, amount)?;
 
+    emit!(TokenSold {
+        authority: accts.user.key(),
+        identifier: identifier,
+        amount: amount
+    });
     Ok(())
 }
