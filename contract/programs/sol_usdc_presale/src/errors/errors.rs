@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
 
-// Not yet implemented
-
 #[error_code]
 pub enum PresaleError {
     #[msg("You are not authorized to perform this action.")]
