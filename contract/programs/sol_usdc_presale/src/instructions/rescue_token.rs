@@ -11,7 +11,7 @@ use crate::{constants::*, errors::*, events::*, state::*};
 #[instruction(
     identifier: u8
 )]
-pub struct WithdrawToken<'info> {
+pub struct RescueToken<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
@@ -40,7 +40,7 @@ pub struct WithdrawToken<'info> {
     pub vault_state: Account<'info, VaultState>,
 
     #[account(
-        address = global_state.quote_token_mint
+        address = global_state.token_mint
     )]
     pub token_mint: Box<Account<'info, Mint>>,
 
@@ -49,7 +49,7 @@ pub struct WithdrawToken<'info> {
         associated_token::mint = token_mint,
         associated_token::authority = presale_state,
     )]
-    pub quote_token_account: Box<Account<'info, TokenAccount>>,
+    pub presale_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
         init_if_needed,
@@ -65,20 +65,20 @@ pub struct WithdrawToken<'info> {
 }
 
 pub fn handle(
-    ctx: Context<WithdrawToken>, 
+    ctx: Context<RescueToken>, 
     identifier: u8,
     amount: u64
 ) -> Result<()> {
     let accts = ctx.accounts;
 
-    require!(accts.presale_state.real_amount >= amount, PresaleError::InsufficentTokenAmount);
+    require!(accts.presale_state.deposit_token_amount >= amount, PresaleError::InsufficentTokenAmount);
     
-    accts.presale_state.real_amount -= amount;
+    accts.presale_state.deposit_token_amount -= amount;
 
     let signer_seeds: &[&[&[u8]]] = &[&[&PRESALE_STATE_SEED, &identifier.to_le_bytes(), &[ctx.bumps.presale_state]]];
 
     let cpi_accounts = Transfer {
-        from: accts.quote_token_account.to_account_info(),
+        from: accts.presale_token_account.to_account_info(),
         to: accts.authority_token_account.to_account_info(),
         authority: accts.presale_state.to_account_info(),
     };
@@ -87,7 +87,7 @@ pub fn handle(
 
     token::transfer(cpi_ctx, amount)?;
 
-    emit!(TokenWithdrawn {
+    emit!(TokenRescued {
         authority: accts.authority.key(),
         identifier: identifier,
         amount: amount

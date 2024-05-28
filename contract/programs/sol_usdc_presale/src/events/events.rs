@@ -58,3 +58,10 @@ pub struct TokenWithdrawn {
     pub identifier: u8,
     pub amount: u64
 }
+
+#[event]
+pub struct TokenRescued {
+    pub authority: Pubkey,
+    pub identifier: u8,
+    pub amount: u64
+}

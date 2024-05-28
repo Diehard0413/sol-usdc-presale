@@ -510,6 +510,36 @@ describe("sol_usdc_presale", () => {
     info = await getAccount(provider.connection, devUsdcATA);
     console.log(`devUsdcATA amount: ${info.amount}`);
 
+    info = await getAccount(provider.connection, presaleATA);
+    console.log(`presaleATA amount: ${info.amount}`);
+
+    devPresaleATA = await getVaultPDA(presaleMint, pubkey0);
+    console.log(`devPresaleATA address: ${devPresaleATA}`);
+
+    tx = await program.methods
+      .rescueToken(0, new BN(HUNDRED))
+      .accounts({
+        authority: pubkey0,
+        globalState: myGlobalPDA,
+        presaleState: presalePDA,
+        vaultState: vaultSPDA,
+        tokenMint: presaleMint,
+        presaleTokenAccount: presaleATA,
+        authorityTokenAccount: devPresaleATA,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .signers([myKeypair])
+      .rpc();
+
+    console.log("dev rescued presale token", tx);
+
+    info = await getAccount(provider.connection, presaleATA);
+    console.log(`presaleATA amount: ${info.amount}`);
+    info = await getAccount(provider.connection, devPresaleATA);
+    console.log(`devPresaleATA amount: ${info.amount}`);
+
     tx = await program.methods
       .updateConfig(true)
       .accounts({
@@ -555,5 +585,35 @@ describe("sol_usdc_presale", () => {
     console.log(`usdcATA amount: ${info.amount}`);
     info = await getAccount(provider.connection, ownerUsdcATA);
     console.log(`userVaultPDA0 amount: ${info.amount}`);
+  });
+
+  it("Owner rescued the tokens!", async () => {
+    let info = await getAccount(provider.connection, presaleATA);
+    console.log(`presaleATA amount: ${info.amount}`);
+    info = await getAccount(provider.connection, ownerPresaleATA);
+    console.log(`ownerPresaleATA amount: ${info.amount}`);
+
+    const tx = await program.methods
+      .rescueToken(0, new BN(HUNDRED))
+      .accounts({
+        authority: myPubkey,
+        globalState: globalPDA,
+        presaleState: presalePDA,
+        vaultState: vaultSPDA,
+        tokenMint: presaleMint,
+        presaleTokenAccount: presaleATA,
+        authorityTokenAccount: ownerPresaleATA,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    console.log("Owner rescued presale token", tx);
+
+    info = await getAccount(provider.connection, presaleATA);
+    console.log(`presaleATA amount: ${info.amount}`);
+    info = await getAccount(provider.connection, ownerPresaleATA);
+    console.log(`ownerPresaleATA amount: ${info.amount}`);
   });
 });

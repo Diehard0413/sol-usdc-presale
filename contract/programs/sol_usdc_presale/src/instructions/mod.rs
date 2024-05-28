@@ -7,6 +7,7 @@ pub mod deposit_token;
 pub mod buy_token;
 pub mod claim_token;
 pub mod withdraw_token;
+pub mod rescue_token;
 
 pub use initialize::*;
 pub use update_auth::*;
@@ -17,3 +18,4 @@ pub use deposit_token::*;
 pub use buy_token::*;
 pub use claim_token::*;
 pub use withdraw_token::*;
+pub use rescue_token::*;

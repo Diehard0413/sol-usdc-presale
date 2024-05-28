@@ -119,6 +119,18 @@ pub mod sol_usdc_presale {
             amount
         );
     }
+
+    pub fn rescue_token(
+        ctx: Context<RescueToken>,
+        identifier: u8,
+        amount: u64
+    ) -> Result<()> {
+        return rescue_token::handle(
+            ctx,
+            identifier,
+            amount
+        );
+    }
 }
 
 
