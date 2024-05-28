@@ -45,20 +45,21 @@ pub struct BuyToken<'info> {
     pub user_state: Box<Account<'info, UserState>>,
 
     #[account(
-        address = global_state.token_mint
+        address = global_state.quote_token_mint,
     )]
-    pub token_mint: Box<Account<'info, Mint>>,
+    pub quote_token_mint: Box<Account<'info, Mint>>,
 
     #[account(
-        mut,
-        associated_token::mint = token_mint,
+        init_if_needed,
+        payer = user,
+        associated_token::mint = quote_token_mint,
         associated_token::authority = presale_state,
     )]
-    pub presale_token_account: Box<Account<'info, TokenAccount>>,
+    pub quote_token_account: Box<Account<'info, TokenAccount>>,
     
     #[account(
         mut,
-        associated_token::mint = token_mint,
+        associated_token::mint = quote_token_mint,
         associated_token::authority = user,
     )]
     pub user_token_account: Box<Account<'info, TokenAccount>>,
@@ -106,7 +107,7 @@ pub fn handle(
 
     let cpi_accounts = Transfer {
         from: accts.user_token_account.to_account_info(),
-        to: accts.presale_token_account.to_account_info(),
+        to: accts.quote_token_account.to_account_info(),
         authority: accts.user.to_account_info(),
     };
     let cpi_program = accts.token_program.to_account_info();

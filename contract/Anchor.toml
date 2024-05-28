@@ -3,7 +3,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-sol_usdc_presale = "BFiq33i9YQt5afhHzCxhDPYWeJeAkM2MWpLjS3Naqia2"
+sol_usdc_presale = "DULGDdPomhYSSHvdzGKpoGip3FuiSoTZ9oEU4bNpCvKr"
 
 [registry]
 url = "https://api.devnet.solana.com"

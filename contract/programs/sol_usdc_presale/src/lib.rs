@@ -8,9 +8,9 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("BFiq33i9YQt5afhHzCxhDPYWeJeAkM2MWpLjS3Naqia2");
+declare_id!("DULGDdPomhYSSHvdzGKpoGip3FuiSoTZ9oEU4bNpCvKr");
 #[program]
-pub mod token_presale {
+pub mod sol_usdc_presale {
     use super::*;
 
     pub fn initialize(

@@ -32,7 +32,15 @@ pub struct WithdrawToken<'info> {
     pub presale_state: Box<Account<'info, PresaleState>>,
 
     #[account(
-        address = global_state.token_mint
+        mut,
+        seeds = [VAULT_STATE_SEED],
+        bump,
+        constraint = vault_state.is_initialized == true,
+    )]
+    pub vault_state: Account<'info, VaultState>,
+
+    #[account(
+        address = global_state.quote_token_mint
     )]
     pub token_mint: Box<Account<'info, Mint>>,
 
@@ -41,7 +49,7 @@ pub struct WithdrawToken<'info> {
         associated_token::mint = token_mint,
         associated_token::authority = presale_state,
     )]
-    pub presale_token_account: Box<Account<'info, TokenAccount>>,
+    pub quote_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
         init_if_needed,
@@ -70,7 +78,7 @@ pub fn handle(
     let signer_seeds: &[&[&[u8]]] = &[&[&PRESALE_STATE_SEED, &identifier.to_le_bytes(), &[ctx.bumps.presale_state]]];
 
     let cpi_accounts = Transfer {
-        from: accts.presale_token_account.to_account_info(),
+        from: accts.quote_token_account.to_account_info(),
         to: accts.authority_token_account.to_account_info(),
         authority: accts.presale_state.to_account_info(),
     };
