@@ -8,7 +8,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("DULGDdPomhYSSHvdzGKpoGip3FuiSoTZ9oEU4bNpCvKr");
+declare_id!("FdyQCcfJRbCZEnT19MZM5VMPpmnEaGJFb75YLcCWmR6s");
 #[program]
 pub mod sol_usdc_presale {
     use super::*;
