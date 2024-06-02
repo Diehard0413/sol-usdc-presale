@@ -5,7 +5,7 @@ use {
         token::{self, Mint, Token, TokenAccount, Transfer}
     },
 };
-use crate::{constants::*, events::*, state::*};
+use crate::{constants::*, errors::*, events::*, state::*};
 
 #[derive(Accounts)]
 #[instruction(
@@ -63,6 +63,9 @@ pub fn handle(
 ) -> Result<()> {
     let accts = ctx.accounts;
 
+    let decimals: u64 = 9;
+    let scaled_amount = amount.checked_mul(10u64.pow(decimals as u32)).ok_or(PresaleError::MathOverflow)?;
+
     let cpi_accounts = Transfer {
         from: accts.authority_token_account.to_account_info(),
         to: accts.presale_token_account.to_account_info(),
@@ -71,7 +74,7 @@ pub fn handle(
     let cpi_program = accts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
-    token::transfer(cpi_ctx, amount)?;
+    token::transfer(cpi_ctx, scaled_amount)?;
 
     accts.presale_state.deposit_token_amount += amount;
 

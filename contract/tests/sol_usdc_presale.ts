@@ -38,8 +38,8 @@ describe("sol_usdc_presale", () => {
   const pubkey1 = keypair1.publicKey;
   const pubkey2 = keypair2.publicKey;
 
-  const HUNDRED = new BN(100000000000);
-  const THOUSAND = new BN(1000000000000);
+  const HUNDRED = new BN(100);
+  const THOUSAND = new BN(1000);
 
   const START_TIME = "2024-05-1T05:00:00-04:00";
   const DEAD_TIME = "2024-05-21T05:00:00-04:00";
@@ -254,7 +254,7 @@ describe("sol_usdc_presale", () => {
     console.log(`poolPDA address: ${presalePDA}`);
 
     let tx = await program.methods
-      .createPresale(new BN(1), new BN(25), HUNDRED, new BN(1), new BN(new Date(START_TIME).getTime() / 1000), new BN(new Date(END_TIME).getTime() / 1000))
+      .createPresale(new BN(1), new BN(25), HUNDRED, new BN(10000), new BN(new Date(START_TIME).getTime() / 1000), new BN(new Date(END_TIME).getTime() / 1000))
       .accounts({
         authority: myPubkey,
         globalState: globalPDA,

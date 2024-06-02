@@ -103,6 +103,9 @@ pub fn handle(
     accts.user_state.buy_token_amount += token_amount;
     accts.user_state.buy_time = cur_timestamp;
 
+    let decimals: u64 = 6;
+    let scaled_amount = amount.checked_mul(10u64.pow(decimals as u32)).ok_or(PresaleError::MathOverflow)?;
+
     let cpi_accounts = Transfer {
         from: accts.user_token_account.to_account_info(),
         to: accts.quote_token_account.to_account_info(),
@@ -111,7 +114,7 @@ pub fn handle(
     let cpi_program = accts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
-    token::transfer(cpi_ctx, amount)?;
+    token::transfer(cpi_ctx, scaled_amount)?;
 
     emit!(TokenSold {
         authority: accts.user.key(),

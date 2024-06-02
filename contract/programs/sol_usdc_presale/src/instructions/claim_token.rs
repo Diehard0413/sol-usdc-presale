@@ -90,6 +90,9 @@ pub fn handle(
 
     accts.user_state.claim_amount += claimable_amount;
     accts.user_state.claim_time = cur_timestamp;
+    
+    let decimals: u64 = 9;
+    let scaled_amount = accts.user_state.claim_amount.checked_mul(10u64.pow(decimals as u32)).ok_or(PresaleError::MathOverflow)?;
 
     let signer_seeds: &[&[&[u8]]] = &[&[&PRESALE_STATE_SEED, &identifier.to_le_bytes(), &[ctx.bumps.presale_state]]];
 
@@ -101,7 +104,7 @@ pub fn handle(
     let cpi_program = accts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
-    token::transfer(cpi_ctx, accts.user_state.claim_amount)?;
+    token::transfer(cpi_ctx, scaled_amount)?;
 
     emit!(TokenSold {
         authority: accts.user.key(),

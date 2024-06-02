@@ -75,6 +75,9 @@ pub fn handle(
     
     accts.presale_state.deposit_token_amount -= amount;
 
+    let decimals: u64 = 9;
+    let scaled_amount = amount.checked_mul(10u64.pow(decimals as u32)).ok_or(PresaleError::MathOverflow)?;
+
     let signer_seeds: &[&[&[u8]]] = &[&[&PRESALE_STATE_SEED, &identifier.to_le_bytes(), &[ctx.bumps.presale_state]]];
 
     let cpi_accounts = Transfer {
@@ -85,7 +88,7 @@ pub fn handle(
     let cpi_program = accts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
-    token::transfer(cpi_ctx, amount)?;
+    token::transfer(cpi_ctx, scaled_amount)?;
 
     emit!(TokenRescued {
         authority: accts.authority.key(),
