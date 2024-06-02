@@ -82,8 +82,6 @@ pub fn handle(
     require!(cur_timestamp <= accts.presale_state.end_time, PresaleError::PresaleEnded);
     
     let token_amount = amount
-        .checked_pow(accts.presale_state.decimal as u32)
-        .unwrap()
         .checked_mul(10000 as u64)
         .unwrap()
         .checked_div(accts.presale_state.price_per_token)

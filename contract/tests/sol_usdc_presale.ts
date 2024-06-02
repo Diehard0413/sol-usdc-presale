@@ -43,7 +43,7 @@ describe("sol_usdc_presale", () => {
 
   const START_TIME = "2024-05-1T05:00:00-04:00";
   const DEAD_TIME = "2024-05-21T05:00:00-04:00";
-  const END_TIME = "2024-06-01T05:00:00-04:00";
+  const END_TIME = "2024-06-05T05:00:00-04:00";
 
   const getStatePDA = async (owner: PublicKey) => {
     return (
@@ -311,7 +311,7 @@ describe("sol_usdc_presale", () => {
     console.log(`userUsdcATA0 amount: ${info.amount}`);
     
     const tx = await program.methods
-      .buyToken(0, new BN(HUNDRED))
+      .buyToken(0, new BN(1))
       .accounts({
         user: pubkey1,
         authority: myPubkey,
@@ -334,6 +334,12 @@ describe("sol_usdc_presale", () => {
     console.log(`userUsdcATA0 amount: ${info.amount}`);
     info = await getAccount(provider.connection, usdcATA);
     console.log(`usdcATA amount: ${info.amount}`);
+
+    const presaleInfo = await program.account.presaleState.fetchNullable(presalePDA) as any;
+    console.log(`presaleInfo deposited amount: ${presaleInfo.depositTokenAmount}`);
+    console.log(`presaleInfo real amount: ${presaleInfo.realAmount}`);
+    console.log(`presaleInfo sold amount: ${presaleInfo.soldTokenAmount}`);
+
   });
 
   it("User 1 bought presale token!", async () => {
@@ -349,7 +355,7 @@ describe("sol_usdc_presale", () => {
     console.log(`usdcATA amount: ${info.amount}`);
     
     const tx = await program.methods
-      .buyToken(0, new BN(HUNDRED))
+      .buyToken(0, new BN(1))
       .accounts({
         user: pubkey2,
         authority: myPubkey,
@@ -372,6 +378,11 @@ describe("sol_usdc_presale", () => {
     console.log(`userUsdcATA1 amount: ${info.amount}`);
     info = await getAccount(provider.connection, usdcATA);
     console.log(`usdcATA amount: ${info.amount}`);
+
+    const presaleInfo = await program.account.presaleState.fetchNullable(presalePDA) as any;
+    console.log(`presaleInfo deposited amount: ${presaleInfo.depositTokenAmount}`);
+    console.log(`presaleInfo real amount: ${presaleInfo.realAmount}`);
+    console.log(`presaleInfo sold amount: ${presaleInfo.soldTokenAmount}`);
   });
 
   it("Presale is updated!", async () => {
@@ -487,7 +498,7 @@ describe("sol_usdc_presale", () => {
     console.log(`devUsdcATA amount: ${info.amount}`);
 
     tx = await program.methods
-      .withdrawToken(0, new BN(HUNDRED))
+      .withdrawToken(0, new BN(1))
       .accounts({
         authority: pubkey0,
         globalState: myGlobalPDA,
@@ -561,10 +572,10 @@ describe("sol_usdc_presale", () => {
     let info = await getAccount(provider.connection, usdcATA);
     console.log(`usdcATA amount: ${info.amount}`);
     info = await getAccount(provider.connection, ownerUsdcATA);
-    console.log(`userVaultPDA0 amount: ${info.amount}`);
+    console.log(`ownerUsdcATA amount: ${info.amount}`);
 
     const tx = await program.methods
-      .withdrawToken(0, new BN(HUNDRED))
+      .withdrawToken(0, new BN(1))
       .accounts({
         authority: myPubkey,
         globalState: globalPDA,
@@ -584,7 +595,7 @@ describe("sol_usdc_presale", () => {
     info = await getAccount(provider.connection, usdcATA);
     console.log(`usdcATA amount: ${info.amount}`);
     info = await getAccount(provider.connection, ownerUsdcATA);
-    console.log(`userVaultPDA0 amount: ${info.amount}`);
+    console.log(`ownerUsdcATA amount: ${info.amount}`);
   });
 
   it("Owner rescued the tokens!", async () => {
