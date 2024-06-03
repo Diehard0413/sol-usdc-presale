@@ -66,8 +66,7 @@ pub fn handle(
 
     require!(cur_timestamp > accts.presale_state.end_time, PresaleError::PresaleNotEnded);
 
-    // let total_vesting_period = 12 * 30 * 24 * 60 * 60; // 12 months in seconds
-    let total_vesting_period = 18 * 5 * 60; // 5 minutes in seconds
+    let total_vesting_period = 18 * 30 * 24 * 60 * 60;
 
     let first_month_vesting = accts.user_state.buy_token_amount * 7 / 100;
     let monthly_vesting = accts.user_state.buy_token_amount * 93 / 100 / 17;
@@ -77,8 +76,7 @@ pub fn handle(
     if cur_timestamp >= accts.presale_state.end_time + total_vesting_period {
         vested_amount = accts.user_state.buy_token_amount;
     } else {
-        // let months_passed = (cur_timestamp - accts.presale_state.end_time) / (30 * 24 * 60 * 60);
-        let months_passed = (cur_timestamp - accts.presale_state.end_time) / (5 * 60);
+        let months_passed = (cur_timestamp - accts.presale_state.end_time) / (30 * 24 * 60 * 60);
         if months_passed == 0 {
             vested_amount = first_month_vesting;
         } else {
