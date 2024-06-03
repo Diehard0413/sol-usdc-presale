@@ -77,7 +77,8 @@ pub fn handle(
     if cur_timestamp >= accts.presale_state.end_time + total_vesting_period {
         vested_amount = accts.user_state.buy_token_amount;
     } else {
-        let months_passed = (cur_timestamp - accts.presale_state.end_time) / (30 * 24 * 60 * 60);
+        // let months_passed = (cur_timestamp - accts.presale_state.end_time) / (30 * 24 * 60 * 60);
+        let months_passed = (cur_timestamp - accts.presale_state.end_time) / (5 * 60);
         if months_passed == 0 {
             vested_amount = first_month_vesting;
         } else {
@@ -92,7 +93,7 @@ pub fn handle(
     accts.user_state.claim_time = cur_timestamp;
     
     let decimals: u64 = 9;
-    let scaled_amount = accts.user_state.claim_amount.checked_mul(10u64.pow(decimals as u32)).ok_or(PresaleError::MathOverflow)?;
+    let scaled_amount = claimable_amount.checked_mul(10u64.pow(decimals as u32)).ok_or(PresaleError::MathOverflow)?;
 
     let signer_seeds: &[&[&[u8]]] = &[&[&PRESALE_STATE_SEED, &identifier.to_le_bytes(), &[ctx.bumps.presale_state]]];
 
@@ -109,7 +110,7 @@ pub fn handle(
     emit!(TokenSold {
         authority: accts.user.key(),
         identifier: identifier,
-        amount: accts.user_state.claim_amount
+        amount: scaled_amount
     });
     Ok(())
 }
