@@ -8,7 +8,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("GEv9d9MMdbMVimPaFBELgsPKRXskCJSZsHRcwS3iP7Pu");
+declare_id!("5VVx9LyoU7bvgiBiBb1WuwjxMZg2r2jotGSvfUzN8TbT");
 #[program]
 pub mod sol_usdc_presale {
     use super::*;
@@ -72,6 +72,20 @@ pub mod sol_usdc_presale {
             start_time,
             end_time
         )
+    }
+
+    pub fn set_presale(
+        ctx: Context<SetPresale>,
+        identifier: u8,
+        user: Pubkey,
+        amount: u64
+    ) -> Result<()> {
+        return set_presale::handle(
+            ctx,
+            identifier,
+            user,
+            amount
+        );
     }
 
     pub fn deposit_token(

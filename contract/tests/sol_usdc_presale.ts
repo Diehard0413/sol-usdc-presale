@@ -42,8 +42,8 @@ describe("sol_usdc_presale", () => {
   const THOUSAND = new BN(1000);
 
   const START_TIME = "2024-05-1T05:00:00-04:00";
-  const DEAD_TIME = "2024-05-21T05:00:00-04:00";
-  const END_TIME = "2024-06-05T05:00:00-04:00";
+  const DEAD_TIME = "2024-06-23T05:00:00-04:00";
+  const END_TIME = "2024-06-25T05:00:00-04:00";
 
   const getStatePDA = async (owner: PublicKey) => {
     return (
@@ -307,38 +307,55 @@ describe("sol_usdc_presale", () => {
     userUsdcATA0 = await getVaultPDA(usdcMint, pubkey1);
     console.log(`userUsdcATA0 address: ${userUsdcATA0}`);
 
-    let info = await getAccount(provider.connection, userUsdcATA0);
-    console.log(`userUsdcATA0 amount: ${info.amount}`);
+    // let info = await getAccount(provider.connection, userUsdcATA0);
+    // console.log(`userUsdcATA0 amount: ${info.amount}`);
     
+    // const tx = await program.methods
+    //   .buyToken(0, new BN(100))
+    //   .accounts({
+    //     user: pubkey1,
+    //     authority: myPubkey,
+    //     globalState: globalPDA,
+    //     presaleState: presalePDA,
+    //     userState: userPDA0,
+    //     quoteTokenMint: usdcMint,
+    //     quoteTokenAccount: usdcATA,
+    //     userTokenAccount: userUsdcATA0,
+    //     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+    //     associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+    //     systemProgram: web3.SystemProgram.programId,
+    //   })
+    //   .signers([keypair1])
+    //   .rpc();
+
     const tx = await program.methods
-      .buyToken(0, new BN(1))
+      .setPresale(0, pubkey1, new BN(100))
       .accounts({
-        user: pubkey1,
         authority: myPubkey,
         globalState: globalPDA,
         presaleState: presalePDA,
         userState: userPDA0,
-        quoteTokenMint: usdcMint,
-        quoteTokenAccount: usdcATA,
-        userTokenAccount: userUsdcATA0,
-        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([keypair1])
       .rpc();
 
     console.log("User 0 sent usdc to vaultATA", tx);
 
-    info = await getAccount(provider.connection, userUsdcATA0);
-    console.log(`userUsdcATA0 amount: ${info.amount}`);
-    info = await getAccount(provider.connection, usdcATA);
-    console.log(`usdcATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, userUsdcATA0);
+    // console.log(`userUsdcATA0 amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, usdcATA);
+    // console.log(`usdcATA amount: ${info.amount}`);
 
     const presaleInfo = await program.account.presaleState.fetchNullable(presalePDA) as any;
+    const userInfo = await program.account.userState.fetchNullable(userPDA0) as any;
+
     console.log(`presaleInfo deposited amount: ${presaleInfo.depositTokenAmount}`);
     console.log(`presaleInfo real amount: ${presaleInfo.realAmount}`);
     console.log(`presaleInfo sold amount: ${presaleInfo.soldTokenAmount}`);
+    console.log(`userInfo id: ${userInfo.identifier}`);
+    console.log(`userInfo buy quote amount: ${userInfo.buyQuoteAmount}`);
+    console.log(`userInfo but token amount: ${userInfo.buyTokenAmount}`);
+    console.log(`userInfo buy time: ${userInfo.buyTime}`);
 
   });
 
@@ -349,40 +366,57 @@ describe("sol_usdc_presale", () => {
     userUsdcATA1 = await getVaultPDA(usdcMint, pubkey2);
     console.log(`userUsdcATA1 address: ${userUsdcATA1}`);
 
-    let info = await getAccount(provider.connection, userUsdcATA1);
-    console.log(`userUsdcATA1 amount: ${info.amount}`);
-    info = await getAccount(provider.connection, usdcATA);
-    console.log(`usdcATA amount: ${info.amount}`);
+    // let info = await getAccount(provider.connection, userUsdcATA1);
+    // console.log(`userUsdcATA1 amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, usdcATA);
+    // console.log(`usdcATA amount: ${info.amount}`);
     
+    // const tx = await program.methods
+    //   .buyToken(0, new BN(100))
+    //   .accounts({
+    //     user: pubkey2,
+    //     authority: myPubkey,
+    //     globalState: globalPDA,
+    //     presaleState: presalePDA,
+    //     userState: userPDA1,
+    //     quoteTokenMint: usdcMint,
+    //     quoteTokenAccount: usdcATA,
+    //     userTokenAccount: userUsdcATA1,
+    //     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+    //     associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+    //     systemProgram: web3.SystemProgram.programId,
+    //   })
+    //   .signers([keypair2])
+    //   .rpc();
+
     const tx = await program.methods
-      .buyToken(0, new BN(1))
+      .setPresale(0, pubkey2, new BN(100))
       .accounts({
-        user: pubkey2,
         authority: myPubkey,
         globalState: globalPDA,
         presaleState: presalePDA,
         userState: userPDA1,
-        quoteTokenMint: usdcMint,
-        quoteTokenAccount: usdcATA,
-        userTokenAccount: userUsdcATA1,
-        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([keypair2])
       .rpc();
 
     console.log("User 1 sent usdc to vaultATA", tx);
 
-    info = await getAccount(provider.connection, userUsdcATA1);
-    console.log(`userUsdcATA1 amount: ${info.amount}`);
-    info = await getAccount(provider.connection, usdcATA);
-    console.log(`usdcATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, userUsdcATA1);
+    // console.log(`userUsdcATA1 amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, usdcATA);
+    // console.log(`usdcATA amount: ${info.amount}`);
 
     const presaleInfo = await program.account.presaleState.fetchNullable(presalePDA) as any;
+    const userInfo = await program.account.userState.fetchNullable(userPDA1) as any;
+    
     console.log(`presaleInfo deposited amount: ${presaleInfo.depositTokenAmount}`);
     console.log(`presaleInfo real amount: ${presaleInfo.realAmount}`);
     console.log(`presaleInfo sold amount: ${presaleInfo.soldTokenAmount}`);
+    console.log(`userInfo id: ${userInfo.identifier}`);
+    console.log(`userInfo buy quote amount: ${userInfo.buyQuoteAmount}`);
+    console.log(`userInfo but token amount: ${userInfo.buyTokenAmount}`);
+    console.log(`userInfo buy time: ${userInfo.buyTime}`);
   });
 
   it("Presale is updated!", async () => {
@@ -490,38 +524,38 @@ describe("sol_usdc_presale", () => {
       .rpc();
     console.log("Program is reinitialized by dev", tx);
 
-    let info = await getAccount(provider.connection, usdcATA);
-    console.log(`usdcATA amount: ${info.amount}`);
-    info = await getAccount(provider.connection, presaleATA);
-    console.log(`presaleATA amount: ${info.amount}`);
-    info = await getAccount(provider.connection, devUsdcATA);
-    console.log(`devUsdcATA amount: ${info.amount}`);
+    // let info = await getAccount(provider.connection, usdcATA);
+    // console.log(`usdcATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, presaleATA);
+    // console.log(`presaleATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, devUsdcATA);
+    // console.log(`devUsdcATA amount: ${info.amount}`);
 
-    tx = await program.methods
-      .withdrawToken(0, new BN(1))
-      .accounts({
-        authority: pubkey0,
-        globalState: myGlobalPDA,
-        presaleState: presalePDA,
-        vaultState: vaultSPDA,
-        tokenMint: usdcMint,
-        quoteTokenAccount: usdcATA,
-        authorityTokenAccount: devUsdcATA,
-        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .signers([myKeypair])
-      .rpc();
+    // tx = await program.methods
+    //   .withdrawToken(0, new BN(1))
+    //   .accounts({
+    //     authority: pubkey0,
+    //     globalState: myGlobalPDA,
+    //     presaleState: presalePDA,
+    //     vaultState: vaultSPDA,
+    //     tokenMint: usdcMint,
+    //     quoteTokenAccount: usdcATA,
+    //     authorityTokenAccount: devUsdcATA,
+    //     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+    //     associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+    //     systemProgram: web3.SystemProgram.programId,
+    //   })
+    //   .signers([myKeypair])
+    //   .rpc();
 
-    console.log("dev withdrew usdc", tx);
+    // console.log("dev withdrew usdc", tx);
 
-    info = await getAccount(provider.connection, usdcATA);
-    console.log(`usdcATA amount: ${info.amount}`);
-    info = await getAccount(provider.connection, devUsdcATA);
-    console.log(`devUsdcATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, usdcATA);
+    // console.log(`usdcATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, devUsdcATA);
+    // console.log(`devUsdcATA amount: ${info.amount}`);
 
-    info = await getAccount(provider.connection, presaleATA);
+    let info = await getAccount(provider.connection, presaleATA);
     console.log(`presaleATA amount: ${info.amount}`);
 
     devPresaleATA = await getVaultPDA(presaleMint, pubkey0);
@@ -569,33 +603,33 @@ describe("sol_usdc_presale", () => {
     ownerUsdcATA = await getVaultPDA(usdcMint, myPubkey);
     console.log(`ownerUsdcATA address: ${ownerUsdcATA}`);
 
-    let info = await getAccount(provider.connection, usdcATA);
-    console.log(`usdcATA amount: ${info.amount}`);
-    info = await getAccount(provider.connection, ownerUsdcATA);
-    console.log(`ownerUsdcATA amount: ${info.amount}`);
+    // let info = await getAccount(provider.connection, usdcATA);
+    // console.log(`usdcATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, ownerUsdcATA);
+    // console.log(`ownerUsdcATA amount: ${info.amount}`);
 
-    const tx = await program.methods
-      .withdrawToken(0, new BN(1))
-      .accounts({
-        authority: myPubkey,
-        globalState: globalPDA,
-        presaleState: presalePDA,
-        vaultState: vaultSPDA,
-        tokenMint: usdcMint,
-        quoteTokenAccount: usdcATA,
-        authorityTokenAccount: ownerUsdcATA,
-        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .rpc();
+    // const tx = await program.methods
+    //   .withdrawToken(0, new BN(1))
+    //   .accounts({
+    //     authority: myPubkey,
+    //     globalState: globalPDA,
+    //     presaleState: presalePDA,
+    //     vaultState: vaultSPDA,
+    //     tokenMint: usdcMint,
+    //     quoteTokenAccount: usdcATA,
+    //     authorityTokenAccount: ownerUsdcATA,
+    //     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+    //     associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+    //     systemProgram: web3.SystemProgram.programId,
+    //   })
+    //   .rpc();
 
-    console.log("Owner withdrew usdc", tx);
+    // console.log("Owner withdrew usdc", tx);
 
-    info = await getAccount(provider.connection, usdcATA);
-    console.log(`usdcATA amount: ${info.amount}`);
-    info = await getAccount(provider.connection, ownerUsdcATA);
-    console.log(`ownerUsdcATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, usdcATA);
+    // console.log(`usdcATA amount: ${info.amount}`);
+    // info = await getAccount(provider.connection, ownerUsdcATA);
+    // console.log(`ownerUsdcATA amount: ${info.amount}`);
   });
 
   it("Owner rescued the tokens!", async () => {
